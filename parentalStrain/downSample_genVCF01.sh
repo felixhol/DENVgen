@@ -1,3 +1,4 @@
+#!/bin/bash
 ### downsample mapped Sam and generate VCFs
 for i in /scratch/users/fhol/DENVparental/AY50H/DENV_amp*/
 	do cd "$i"
