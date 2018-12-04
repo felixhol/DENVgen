@@ -15,7 +15,7 @@ from Bio import SeqIO
 
 os.environ['SINGLET_CONFIG_FILENAME'] = 'singlet.yml'
 sys.path.append('/home/fabio/university/postdoc/singlet')
-from singlet.dataset import Dataset
+from singlet.dataset import Dataset, CountsTable
 
 
 if __name__ == '__main__':
@@ -34,13 +34,13 @@ if __name__ == '__main__':
     #    n_lines[fn] = nl
     #    n_lines_hist[nl] += 1
 
-    # Example file
-    fdn = '../bigdata/DENV_singleCellVCF'
-    fn_ex = 'vars1001700612_I2.vcf'
-    f = pysam.VariantFile('{:}/{:}'.format(fdn, fn_ex), 'r')
-    poss = defaultdict(list)
-    for line in f:
-        poss[line.pos].append(line)
+    ## Example file
+    #fdn = '../bigdata/DENV_singleCellVCF'
+    #fn_ex = 'vars1001700612_I2.vcf'
+    #f = pysam.VariantFile('{:}/{:}'.format(fdn, fn_ex), 'r')
+    #poss = defaultdict(list)
+    #for line in f:
+    #    poss[line.pos].append(line)
 
     # Prepare output data
     seq = SeqIO.read('../data/U87411_strain16681.gb', 'gb')
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # Fill the output
     fdn = '../bigdata/DENV_singleCellVCF'
     for fn in os.listdir(fdn):
-        sn = fn_ex[4:-4]
+        sn = fn[4:-4]
         isn = samplenames.index(sn)
         with pysam.VariantFile('{:}/{:}'.format(fdn, fn), 'r') as f:
             for line in f:
@@ -75,6 +75,20 @@ if __name__ == '__main__':
                     afs[ia, ipos, isn] = af
                     afs[iaa, ipos, isn] -= af
 
+    # Calculate alternative allele frequencies
+    maf = np.ma.masked_all((len(seq), len(samplenames)))
+    ma = np.ma.masked_all(len(seq), '<U1')
+    for ipos in range(len(seq)):
+        afp = afs[:, ipos, :].max(axis=1)
+        mai = afp.argsort()[-2]
+        if afp[mai] > 0:
+            ma[ipos] = alpha[mai]
+            maf[ipos] = afs[mai, ipos]
+    maf = xr.DataArray(
+        data=maf,
+        dims=['position', 'sample'],
+        coords={'position': positions, 'sample': samplenames},
+        )
     afs = xr.DataArray(
         data=afs,
         dims=['allele', 'position', 'sample'],
@@ -85,10 +99,23 @@ if __name__ == '__main__':
         dims=['position', 'sample'],
         coords={'position': positions, 'sample': samplenames},
         )
-    data = xr.Dataset(data_vars={'afs': afs, 'depth': cov, 'ref': np.array(seq)})
+    data = xr.Dataset(data_vars={
+        'afs': afs,
+        'depth': cov,
+        'ref': np.array(seq),
+        'alt': ma,
+        'aaf': maf,
+        },
+        attrs={
+            'afs': 'allele frequencies',
+            'depth': 'sequencing depth at polymorphic sites',
+            'ref': 'reference alleles',
+            'alt': 'top alternative allele',
+            'aaf': 'frequency of top alternative allele (if present)',
+            })
 
     # NetCDF is large but fast to I/O
     data.to_netcdf(path='../bigdata/allele_frequencies.nc', format='NETCDF4')
     # To open back the allele frequencies:
     # import xarray as xr
-    # a = xr.open_dataarray('../data/allele_frequencies.nc')
+    # a = xr.open_dataset('../bigdata/allele_frequencies.nc')
