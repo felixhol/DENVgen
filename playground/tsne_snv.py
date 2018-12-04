@@ -70,6 +70,5 @@ if __name__ == '__main__':
     # Nothing is strongly correlated or anticorrelated, but NOL3 might be an
     # interesting anticorrelated hit
 
-
     plt.ion()
     plt.show()
