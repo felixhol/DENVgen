@@ -10,7 +10,7 @@ io:
  featuresheets:
   humanGC38:
    description: "Annotations for this gene set"
-   path: "/home/fabio/university/postdoc/virus_singlecell/data/human_genome/GRCh38_ensembl-ERCC/ensemblId_geneName_table.tsv"
+   path: "/home/fabio/university/postdoc/DENVgen/data/ensemblId_geneName_table.tsv"
    features: "rows"
    index: "EnsemblGeneID"
 
