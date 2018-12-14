@@ -55,6 +55,7 @@ if __name__ == '__main__':
     # Translate gene IDs
     ds.rename(axis='features', column='GeneName', inplace=True)
     ds.feature_selection.unique(inplace=True)
+    ds.counts.normalize(inplace=True)
 
     ## Restrict to high variance SNVs
     #dsv = ds.copy()
@@ -76,6 +77,8 @@ if __name__ == '__main__':
         genes[ic] = genesi
 
     genes_all = np.unique(np.concatenate(list(genes.values())))
+    with open('../data/genes_diff_expressed_clustersSNV.tsv', 'wt') as f:
+        f.write('\t'.join(genes_all))
 
     dsv = ds.query_features_by_name(genes_all)
 
